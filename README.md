@@ -15,16 +15,16 @@ https://www.mikekohn.net/micro/riscv_fpga.php
 Features
 ========
 
-IO, Button input, speaker tone generator, SPI, and Mandelbrot acceleration.
+IO, Button input, speaker tone generator, and SPI.
 
 Registers
 =========
 
-r0    PC
-r1    SP
-r2    SR
-r3    CR  [ V,  SCG1, SCG0, OSC-OFF, CPU-OFF,  GIE, Z, N, C ]
-r4-15
+    r0    PC
+    r1    SP
+    r2    SR
+    r3    CR  [ V,  SCG1, SCG0, OSC-OFF, CPU-OFF,  GIE, Z, N, C ]
+    r4-15
 
 Instructions
 ============
