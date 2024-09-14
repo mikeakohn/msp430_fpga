@@ -227,13 +227,29 @@ multiply_signed_not_neg:
 
 ;; r12: output (LSB)  (8)
 ;; r13: output (MSB)  (9)
-shift_right_10:
+shift_right_10_slow:
   mov.w #10, r14
 shift_right_10_loop:
   rra.w r13
   rrc.w r12
   dec.w r14
   jnz shift_right_10_loop
+  ret
+
+;; This reduces the time to generate the Mandelbrot from 54 seconds to
+;; 45 seconds (over the shift_right_10_slow function).
+;; r12: output (LSB)  (8)
+;; r13: output (MSB)  (9)
+shift_right_10:
+  rra.w r13
+  rrc.w r12
+  rra.w r13
+  rrc.w r12
+  swpb r12
+  swpb r13
+  bic.w #0xff00, r12
+  bic.w #0x00ff, r13
+  bis.w r13, r12
   ret
 
 curr_x equ 20
