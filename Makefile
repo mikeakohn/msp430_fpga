@@ -1,4 +1,5 @@
 
+NAKEN_INCLUDE=../naken_asm/include
 PROGRAM=msp430
 SOURCE= \
   src/$(PROGRAM).v \
@@ -22,7 +23,7 @@ blink:
 	python3 tools/bin2txt.py rom.bin > rom.txt
 
 lcd:
-	naken_asm -l -type bin -o rom.bin test/lcd.asm
+	naken_asm -l -type bin -o rom.bin -I$(NAKEN_INCLUDE) test/lcd.asm
 	python3 tools/bin2txt.py rom.bin > rom.txt
 
 simple:
@@ -35,6 +36,10 @@ memory:
 
 branch:
 	naken_asm -l -type bin -o rom.bin test/branch.asm
+	python3 tools/bin2txt.py rom.bin > rom.txt
+
+boxes:
+	naken_asm -l -type bin -o rom.bin -I$(NAKEN_INCLUDE) test/boxes.asm
 	python3 tools/bin2txt.py rom.bin > rom.txt
 
 clean:

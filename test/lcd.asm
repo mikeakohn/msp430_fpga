@@ -1,5 +1,7 @@
 .msp430
 
+.include "lcd/ssd1331.inc"
+
 .org 0xf000
 
 ;; Registers.
@@ -23,32 +25,6 @@ LCD_CS     equ 4
 
 ;; Bits in PORT0
 LED0       equ 1
-
-COMMAND_DISPLAY_OFF     equ 0xae
-COMMAND_SET_REMAP       equ 0xa0
-COMMAND_START_LINE      equ 0xa1
-COMMAND_DISPLAY_OFFSET  equ 0xa2
-COMMAND_NORMAL_DISPLAY  equ 0xa4
-COMMAND_SET_MULTIPLEX   equ 0xa8
-COMMAND_SET_MASTER      equ 0xad
-COMMAND_POWER_MODE      equ 0xb0
-COMMAND_PRECHARGE       equ 0xb1
-COMMAND_CLOCKDIV        equ 0xb3
-COMMAND_PRECHARGE_A     equ 0x8a
-COMMAND_PRECHARGE_B     equ 0x8b
-COMMAND_PRECHARGE_C     equ 0x8c
-COMMAND_PRECHARGE_LEVEL equ 0xbb
-COMMAND_VCOMH           equ 0xbe
-COMMAND_MASTER_CURRENT  equ 0x87
-COMMAND_CONTRASTA       equ 0x81
-COMMAND_CONTRASTB       equ 0x82
-COMMAND_CONTRASTC       equ 0x83
-COMMAND_DISPLAY_ON      equ 0xaf
-
-.macro send_command(value)
-  mov.w #value, r15
-  call #lcd_send_cmd
-.endm
 
 .macro square_fixed(var)
 .scope
@@ -105,42 +81,7 @@ lcd_init:
   call #delay
   mov.b #LCD_CS | LCD_RES, &SPI_IO
 
-  send_command(COMMAND_DISPLAY_OFF)
-  send_command(COMMAND_SET_REMAP)
-  send_command(0x72)
-  send_command(COMMAND_START_LINE)
-  send_command(0x00)
-  send_command(COMMAND_DISPLAY_OFFSET)
-  send_command(0x00)
-  send_command(COMMAND_NORMAL_DISPLAY)
-  send_command(COMMAND_SET_MULTIPLEX)
-  send_command(0x3f)
-  send_command(COMMAND_SET_MASTER)
-  send_command(0x8e)
-  send_command(COMMAND_POWER_MODE)
-  send_command(COMMAND_PRECHARGE)
-  send_command(0x31)
-  send_command(COMMAND_CLOCKDIV)
-  send_command(0xf0)
-  send_command(COMMAND_PRECHARGE_A)
-  send_command(0x64)
-  send_command(COMMAND_PRECHARGE_B)
-  send_command(0x78)
-  send_command(COMMAND_PRECHARGE_C)
-  send_command(0x64)
-  send_command(COMMAND_PRECHARGE_LEVEL)
-  send_command(0x3a)
-  send_command(COMMAND_VCOMH)
-  send_command(0x3e)
-  send_command(COMMAND_MASTER_CURRENT)
-  send_command(0x06)
-  send_command(COMMAND_CONTRASTA)
-  send_command(0x91)
-  send_command(COMMAND_CONTRASTB)
-  send_command(0x50)
-  send_command(COMMAND_CONTRASTC)
-  send_command(0x7d)
-  send_command(COMMAND_DISPLAY_ON)
+  call #send_init_data
   ret
 
 lcd_clear:
@@ -360,15 +301,11 @@ mandelbrot_stop:
 
 ;; lcd_send_cmd(r15)
 lcd_send_cmd:
-  bic.b #LCD_DC | LCD_CS, &SPI_IO
-
-  mov.w r15, &SPI_TX
-
+  mov.b r15, &SPI_TX
   bis.b #SPI_START, &SPI_CTL
 lcd_send_cmd_wait:
   bit.b #SPI_BUSY, &SPI_CTL
   jnz lcd_send_cmd_wait
-  bis.b #LCD_CS, &SPI_IO
   ret
 
 ;; lcd_send_data(r15)
@@ -396,6 +333,57 @@ delay_loop:
 toggle_led:
   xor.b #LED0, &PORT0
   ret
+
+send_init_data:
+  mov.w #init_data_end - init_data, r4
+  mov.w #init_data, r5
+  bic.b #LCD_DC | LCD_CS, &SPI_IO
+send_init_data_loop:
+  mov.b @r5+, r15
+  call #lcd_send_cmd
+  dec.w r4
+  jnz send_init_data_loop
+  bis.b #LCD_CS, &SPI_IO
+  ret
+
+init_data:
+  .db SSD1331_DISPLAY_OFF
+  .db SSD1331_SET_REMAP
+  .db 0x72
+  .db SSD1331_START_LINE
+  .db 0x00
+  .db SSD1331_DISPLAY_OFFSET
+  .db 0x00
+  .db SSD1331_DISPLAY_NORMAL
+  .db SSD1331_SET_MULTIPLEX
+  .db 0x3f
+  .db SSD1331_SET_MASTER
+  .db 0x8e
+  .db SSD1331_POWER_MODE
+  .db SSD1331_PRECHARGE
+  .db 0x31
+  .db SSD1331_CLOCKDIV
+  .db 0xf0
+  .db SSD1331_PRECHARGE_A
+  .db 0x64
+  .db SSD1331_PRECHARGE_B
+  .db 0x78
+  .db SSD1331_PRECHARGE_C
+  .db 0x64
+  .db SSD1331_PRECHARGE_LEVEL
+  .db 0x3a
+  .db SSD1331_VCOMH
+  .db 0x3e
+  .db SSD1331_MASTER_CURRENT
+  .db 0x06
+  .db SSD1331_CONTRAST_A
+  .db 0x91
+  .db SSD1331_CONTRAST_B
+  .db 0x50
+  .db SSD1331_CONTRAST_C
+  .db 0x7d
+  .db SSD1331_DISPLAY_ON
+init_data_end:
 
 colors:
   dc16 0xf800
