@@ -60,7 +60,14 @@ start:
 
 main:
   call #lcd_init
-  call #lcd_clear
+  ;call #lcd_clear
+  call #delay
+  call #draw_horizon
+  call #delay
+  call #draw_ground
+  call #delay
+  call #draw_landing_pad
+  call #delay
 
 while_1:
   bit.b #1, &BUTTON
@@ -165,6 +172,42 @@ draw_boxes_loop:
   bis.b #LCD_CS, &SPI_IO
   ret
 
+draw_horizon:
+  mov.w #horizon_data_end - horizon_data, r4
+  mov.w #horizon_data, r5
+  bic.b #LCD_DC | LCD_CS, &SPI_IO
+draw_horizon_loop:
+  mov.b @r5+, r15
+  call #lcd_send_cmd
+  dec.w r4
+  jnz draw_horizon_loop
+  bis.b #LCD_CS, &SPI_IO
+  ret
+
+draw_ground:
+  mov.w #ground_data_end - ground_data, r4
+  mov.w #ground_data, r5
+  bic.b #LCD_DC | LCD_CS, &SPI_IO
+draw_ground_loop:
+  mov.b @r5+, r15
+  call #lcd_send_cmd
+  dec.w r4
+  jnz draw_ground_loop
+  bis.b #LCD_CS, &SPI_IO
+  ret
+
+draw_landing_pad:
+  mov.w #landing_pad_data_end - landing_pad_data, r4
+  mov.w #landing_pad_data, r5
+  bic.b #LCD_DC | LCD_CS, &SPI_IO
+draw_landing_pad_loop:
+  mov.b @r5+, r15
+  call #lcd_send_cmd
+  dec.w r4
+  jnz draw_landing_pad_loop
+  bis.b #LCD_CS, &SPI_IO
+  ret
+
 box_data:
   .db SSD1331_FILL_ENABLE
   .db 0x01, 0x00
@@ -211,7 +254,37 @@ init_data:
   .db SSD1331_CONTRAST_C
   .db 0x7d
   .db SSD1331_DISPLAY_ON
+
+  .db SSD1331_FILL_ENABLE
+  .db 0x01, 0x00
 init_data_end:
+
+horizon_data:
+  ;.db SSD1331_FILL_ENABLE
+  ;.db 0x01, 0x00
+  .db SSD1331_DRAW_RECT
+  .db    0,   21,   95,  63
+  .db 0x00, 0x00, 0x00
+  .db 0x00, 0x00, 0x00
+horizon_data_end:
+
+ground_data:
+  ;.db SSD1331_FILL_ENABLE
+  ;.db 0x01, 0x00
+  .db SSD1331_DRAW_RECT
+  .db    0,    0,   95,  20
+  .db 0x10, 0x10, 0x10
+  .db 0x10, 0x10, 0x10
+ground_data_end:
+
+landing_pad_data:
+  ;.db SSD1331_FILL_ENABLE
+  ;.db 0x01, 0x00
+  .db SSD1331_DRAW_RECT
+  .db   40,   10,   56,  20
+  .db 0x00, 0x00, 0xff
+  .db 0x00, 0x00, 0xff
+landing_pad_data_end:
 
 .org 0xfffe
   .dw start

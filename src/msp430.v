@@ -53,10 +53,10 @@ reg mem_write_enable = 0;
 reg [21:0] count = 0;
 reg [5:0] state = 0;
 //reg [5:0] next_state = 0;
-reg [19:0] clock_div;
+reg [2:0] clock_div;
 reg [14:0] delay_loop;
 wire clk;
-assign clk = clock_div[1];
+assign clk = clock_div[0];
 
 // Registers.
 parameter PC = 0;
@@ -136,6 +136,12 @@ reg [3:0] reg_src;
 reg [15:0] source;
 reg [15:0] temp;
 reg [16:0] result;
+
+reg [3:0] bcd_carry;
+reg [3:0] bcd_sum_0;
+reg [3:0] bcd_sum_1;
+reg [3:0] bcd_sum_2;
+reg [3:0] bcd_sum_3;
 
 // Load / Store.
 //assign memory_size = instruction[14:12];
@@ -262,7 +268,8 @@ always @(posedge raw_clk) begin
     //3'b010: begin column_value <= 4'b1011; leds_value <= ~instruction[15:8]; end
     //3'b010: begin column_value <= 4'b1011; leds_value <= ~alu_op_1; end
     //3'b010: begin column_value <= 4'b1011; leds_value <= ~instruction[9:7]; end
-    3'b100: begin column_value <= 4'b1101; leds_value <= ~pc[7:0]; end
+    3'b100: begin column_value <= 4'b1101; leds_value <= ~sr[7:0]; end
+    //3'b100: begin column_value <= 4'b1101; leds_value <= ~pc[7:0]; end
     3'b110: begin column_value <= 4'b1110; leds_value <= ~state; end
     default: begin column_value <= 4'b1111; leds_value <= 8'hff; end
   endcase
@@ -614,10 +621,58 @@ always @(posedge clk) begin
               end
             OP_DADD:
               begin
+                bcd_sum_0 = temp[3:0] + source[3:0] + sr[FLAG_C];
+
+                if (bcd_sum_0 > 9) begin
+                  result[3:0] = bcd_sum_0 + 6;
+                  bcd_carry[0] = 1;
+                end else begin
+                  result[3:0] = bcd_sum_0;
+                  bcd_carry[0] = 0;
+                end 
+
+                bcd_sum_1 = temp[7:4] + source[7:4] + bcd_carry[0];
+
+                if (bcd_sum_1 > 9) begin
+                  result[7:4] = bcd_sum_1 + 6;
+                  bcd_carry[1] = 1;
+                end else begin
+                  result[7:4] = bcd_sum_1;
+                  bcd_carry[1] = 0;
+                end
+
+                if (bw == 0) begin
+                  bcd_sum_2 = temp[11:8] + source[11:8] + bcd_carry[1];
+
+                  if (bcd_sum_2 > 9) begin
+                    result[11:8] = bcd_sum_2 + 6;
+                    bcd_carry[2] = 1;
+                  end else begin
+                    result[11:8] = bcd_sum_2;
+                    bcd_carry[2] = 0;
+                  end
+
+                  bcd_sum_3 = temp[15:12] + source[15:12] + bcd_carry[2];
+
+                  if (bcd_sum_3 > 9) begin
+                    result[15:12] = bcd_sum_3 + 6;
+                    bcd_carry[3] = 1;
+                  end else begin
+                    result[15:12] = bcd_sum_3;
+                    bcd_carry[3] = 0;
+                  end 
+                end else begin
+                  result[15:8] = 0;
+                end
+
+                result[16] = bw == 0 ? bcd_carry[3] : bcd_carry[1];
+
+/*
                 result[3:0]   <= temp[3:0]   + source[3:0]   + flag_c;
                 result[7:4]   <= temp[7:4]   + source[7:4]   + flag_c;
                 result[11:8]  <= temp[11:8]  + source[11:8]  + flag_c;
                 result[15:12] <= temp[15:12] + source[15:12] + flag_c;
+*/
               end
             OP_BIT:
               begin
@@ -647,8 +702,7 @@ always @(posedge clk) begin
         begin
           if (!(alu_op_2 == OP_MOV ||
                 alu_op_2 == OP_BIC ||
-                alu_op_2 == OP_BIS ||
-                alu_op_2 == OP_DADD)) begin
+                alu_op_2 == OP_BIS)) begin
             if (bw == 0) begin
               registers[SR][FLAG_N] <= result[15] == 1;
               registers[SR][FLAG_Z] <= result[15:0] == 0;
@@ -657,6 +711,8 @@ always @(posedge clk) begin
               registers[SR][FLAG_Z] <= result[7:0] == 0;
             end
           end
+
+          if (alu_op_2 == OP_DADD) registers[SR][FLAG_C] <= result[16];
 
           if (alu_op_2 == OP_ADD ||
               alu_op_2 == OP_ADDC) begin

@@ -42,6 +42,10 @@ boxes:
 	naken_asm -l -type bin -o rom.bin -I$(NAKEN_INCLUDE) test/boxes.asm
 	python3 tools/bin2txt.py rom.bin > rom.txt
 
+bcd:
+	naken_asm -l -type bin -o rom.bin -I$(NAKEN_INCLUDE) test/bcd.asm
+	python3 tools/bin2txt.py rom.bin > rom.txt
+
 clean:
 	@rm -f $(PROGRAM).bin $(PROGRAM).json $(PROGRAM).asc *.lst
 	@rm -f blink.bin load_byte.bin store_byte.bin test_subroutine.bin
