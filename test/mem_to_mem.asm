@@ -1,0 +1,14 @@
+.msp430
+
+
+.org 0xf800
+main:
+  mov.w #0xa5, &0x0204
+  mov.w 0x0204, 0x0206
+  mov.w &0x0206, r4
+loop:
+  jmp loop
+
+.org 0xfffe
+  .dc16 main
+

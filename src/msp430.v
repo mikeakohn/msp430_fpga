@@ -263,13 +263,14 @@ always @(posedge raw_clk) begin
     //3'b010: begin column_value <= 4'b1011; leds_value <= ~result[15:8]; end
     //3'b000: begin column_value <= 4'b0111; leds_value <= ~ea[7:0]; end
     //3'b010: begin column_value <= 4'b1011; leds_value <= ~ea[15:8]; end
+    //3'b000: begin column_value <= 4'b0111; leds_value <= ~pc[7:0]; end
     //3'b010: begin column_value <= 4'b1011; leds_value <= ~pc[15:8]; end
-    //3'b010: begin column_value <= 4'b1011; leds_value <= ~instruction[7:0]; end
+    //3'b000: begin column_value <= 4'b0111; leds_value <= ~instruction[7:0]; end
     //3'b010: begin column_value <= 4'b1011; leds_value <= ~instruction[15:8]; end
     //3'b010: begin column_value <= 4'b1011; leds_value <= ~alu_op_1; end
     //3'b010: begin column_value <= 4'b1011; leds_value <= ~instruction[9:7]; end
-    3'b100: begin column_value <= 4'b1101; leds_value <= ~sr[7:0]; end
-    //3'b100: begin column_value <= 4'b1101; leds_value <= ~pc[7:0]; end
+    //3'b100: begin column_value <= 4'b1101; leds_value <= ~sr[7:0]; end
+    3'b100: begin column_value <= 4'b1101; leds_value <= ~pc[7:0]; end
     3'b110: begin column_value <= 4'b1110; leds_value <= ~state; end
     default: begin column_value <= 4'b1111; leds_value <= 8'hff; end
   endcase
@@ -780,7 +781,7 @@ always @(posedge clk) begin
       STATE_RETI_1:
         begin
           mem_bus_enable <= 0;
-          reti_state <= ^1;
+          reti_state <= ~reti_state;
 
           if (reti_state == 0) begin
             registers[SR] <= mem_read[15:0];

@@ -34,6 +34,14 @@ memory:
 	naken_asm -l -type bin -o rom.bin test/memory.asm
 	python3 tools/bin2txt.py rom.bin > rom.txt
 
+mem_to_mem:
+	naken_asm -l -type bin -o rom.bin test/mem_to_mem.asm
+	python3 tools/bin2txt.py rom.bin > rom.txt
+
+indexed:
+	naken_asm -l -type bin -o rom.bin test/indexed.asm
+	python3 tools/bin2txt.py rom.bin > rom.txt
+
 branch:
 	naken_asm -l -type bin -o rom.bin test/branch.asm
 	python3 tools/bin2txt.py rom.bin > rom.txt

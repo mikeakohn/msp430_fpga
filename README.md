@@ -26,6 +26,26 @@ Registers
     r3    CR  [ V,  SCG1, SCG0, OSC-OFF, CPU-OFF,  GIE, Z, N, C ]
     r4-15
 
+Addressing Modes
+================
+
+    As  Reg   Mode         Dest
+    00        Rn             *
+    01        x(Rn)          *
+    10        @Rn
+    11        @Rn+
+
+    01  pc    address        *
+    11  pc    #immediate
+
+    01  sr    &address       *
+    10  sr    #4
+    11  sr    #8
+    00  cg    #0
+    01  cg    #1
+    10  cg    #2
+    11  cg    #-1
+
 Instructions
 ============
 
@@ -46,7 +66,7 @@ Conditional Jump
     001 000 oooooooooo jne/jnz
     001 001 oooooooooo jeq/jz
     001 010 oooooooooo jnc/jlo
-    001 011 oooooooooo jc/jhs 
+    001 011 oooooooooo jc/jhs
     001 100 oooooooooo jn
     001 101 oooooooooo jge
     001 110 oooooooooo jl
