@@ -5,7 +5,7 @@
 //   Board: iceFUN iCE40 HX8K
 // License: MIT
 //
-// Copyright 2024 by Michael Kohn
+// Copyright 2024-2025 by Michael Kohn
 
 module msp430
 (
@@ -167,47 +167,46 @@ reg reti_state;
 //reg [7:0] debug_2 = 0;
 //reg [7:0] debug_3 = 0;
 
-parameter STATE_RESET         = 0;
-parameter STATE_DELAY_LOOP    = 1;
-parameter STATE_FETCH_RESET_0 = 2;
-parameter STATE_FETCH_RESET_1 = 3;
-parameter STATE_FETCH_OP_0    = 4;
-parameter STATE_FETCH_OP_1    = 5;
-parameter STATE_START_DECODE  = 6;
-parameter STATE_DECODE_MODE_0 = 7;
+parameter STATE_RESET          =  0;
+parameter STATE_DELAY_LOOP     =  1;
+parameter STATE_FETCH_RESET_0  =  2;
+parameter STATE_FETCH_RESET_1  =  3;
+parameter STATE_FETCH_OP_0     =  4;
+parameter STATE_FETCH_OP_1     =  5;
+parameter STATE_START_DECODE   =  6;
+parameter STATE_DECODE_MODE_0  =  7;
 
-parameter STATE_FETCH_EA_0    = 8;
-parameter STATE_FETCH_EA_1    = 9;
-parameter STATE_FETCH_DATA_0  = 10;
-parameter STATE_FETCH_DATA_1  = 11;
+parameter STATE_FETCH_EA_0     =  8;
+parameter STATE_FETCH_EA_1     =  9;
+parameter STATE_FETCH_DATA_0   = 10;
+parameter STATE_FETCH_DATA_1   = 11;
 
-parameter STATE_ALU_SINGLE    = 12;
-parameter STATE_WB_SINGLE_0   = 13;
+parameter STATE_ALU_SINGLE     = 12;
+parameter STATE_WB_SINGLE_0    = 13;
 
-parameter STATE_ALU_TWO_0     = 14;
-parameter STATE_ALU_TWO_1     = 15;
+parameter STATE_ALU_TWO_0      = 14;
+parameter STATE_ALU_TWO_1      = 15;
 parameter STATE_ALU_TWO_1_EA_0 = 16;
 parameter STATE_ALU_TWO_1_EA_1 = 17;
-parameter STATE_ALU_TWO_2     = 18;
-parameter STATE_WB_TWO_0      = 19;
-//parameter STATE_WB_TWO_1      = 20;
+parameter STATE_ALU_TWO_2      = 18;
+parameter STATE_WB_TWO_0       = 19;
 
-parameter STATE_PUSH_0        = 20;
-parameter STATE_PUSH_1        = 21;
-parameter STATE_RETI_0        = 22;
-parameter STATE_RETI_1        = 23;
+parameter STATE_PUSH_0         = 20;
+parameter STATE_PUSH_1         = 21;
+parameter STATE_RETI_0         = 22;
+parameter STATE_RETI_1         = 23;
 
-parameter STATE_DATA_STORE_0  = 24;
-parameter STATE_DATA_STORE_1  = 25;
+parameter STATE_DATA_STORE_0   = 24;
+parameter STATE_DATA_STORE_1   = 25;
 
-parameter STATE_EEPROM_START  = 57;
-parameter STATE_EEPROM_READ   = 58;
-parameter STATE_EEPROM_WAIT   = 59;
-parameter STATE_EEPROM_WRITE  = 60;
-parameter STATE_EEPROM_DONE   = 61;
+parameter STATE_EEPROM_START   = 57;
+parameter STATE_EEPROM_READ    = 58;
+parameter STATE_EEPROM_WAIT    = 59;
+parameter STATE_EEPROM_WRITE   = 60;
+parameter STATE_EEPROM_DONE    = 61;
 
-parameter STATE_ERROR         = 62;
-parameter STATE_HALTED        = 63;
+parameter STATE_ERROR          = 62;
+parameter STATE_HALTED         = 63;
 
 parameter MODE_REG          = 0;
 parameter MODE_ABSOLUTE     = 1;
@@ -259,6 +258,10 @@ always @(posedge raw_clk) begin
     3'b010: begin column_value <= 4'b1011; leds_value <= ~registers[4][15:8]; end
     //3'b000: begin column_value <= 4'b0111; leds_value <= ~registers[PC][7:0]; end
     //3'b010: begin column_value <= 4'b1011; leds_value <= ~registers[PC][15:8]; end
+    //3'b000: begin column_value <= 4'b0111; leds_value <= ~source[7:0]; end
+    //3'b010: begin column_value <= 4'b1011; leds_value <= ~source[15:8]; end
+    //3'b000: begin column_value <= 4'b0111; leds_value <= ~mem_read[7:0]; end
+    //3'b010: begin column_value <= 4'b1011; leds_value <= ~mem_read[15:8]; end
     //3'b000: begin column_value <= 4'b0111; leds_value <= ~result[7:0]; end
     //3'b010: begin column_value <= 4'b1011; leds_value <= ~result[15:8]; end
     //3'b000: begin column_value <= 4'b0111; leds_value <= ~ea[7:0]; end
@@ -286,9 +289,9 @@ always @(posedge clk) begin
     case (state)
       STATE_RESET:
         begin
-          mem_address <= 0;
+          mem_address      <= 0;
           mem_write_enable <= 0;
-          mem_write <= 0;
+          mem_write        <= 0;
           delay_loop <= 12000;
           //eeprom_strobe <= 0;
           state <= STATE_DELAY_LOOP;
@@ -312,9 +315,9 @@ always @(posedge clk) begin
         end
       STATE_FETCH_RESET_0:
         begin
-          mem_bus_enable <= 1;
+          mem_bus_enable   <= 1;
           mem_write_enable <= 0;
-          mem_address <= 16'hfffe;;
+          mem_address      <= 16'hfffe;
           state <= STATE_FETCH_RESET_1;
         end
       STATE_FETCH_RESET_1:
@@ -326,7 +329,7 @@ always @(posedge clk) begin
       STATE_FETCH_OP_0:
         begin
           mem_bus_enable <= 1;
-          mem_address <= pc;
+          mem_address    <= pc;
           registers[PC] <= registers[PC] + 2;
           state <= STATE_FETCH_OP_1;
         end
@@ -386,11 +389,13 @@ always @(posedge clk) begin
               state <= execute_state;
             end
           end else begin
+            source <= registers[reg_src];
+            ea <= registers[reg_src];
+
             case (as)
               0:
                 begin
                   mode <= MODE_REG;
-                  source <= registers[reg_src];
                   state <= execute_state;
                 end
               1:
@@ -400,7 +405,7 @@ always @(posedge clk) begin
                 end
               2:
                 begin
-                  ea <= registers[reg_src];
+                  //ea <= registers[reg_src];
                   state <= STATE_FETCH_DATA_0;
                 end
               3:
@@ -408,7 +413,7 @@ always @(posedge clk) begin
                   mode <= MODE_IMMEDIATE;
                   state <= STATE_FETCH_EA_0;
                 end else begin
-                  ea <= registers[reg_src];
+                  //ea <= registers[reg_src];
 
                   if (bw == 0)
                     registers[reg_src] <= registers[reg_src] + 2;
@@ -423,7 +428,7 @@ always @(posedge clk) begin
       STATE_FETCH_EA_0:
         begin
           mem_bus_enable <= 1;
-          mem_address <= registers[PC];
+          mem_address    <= registers[PC];
           state <= STATE_FETCH_EA_1;
         end
       STATE_FETCH_EA_1:
@@ -435,13 +440,17 @@ always @(posedge clk) begin
             MODE_ABSOLUTE:
               ea <= mem_read;
             MODE_REG_INDEXED:
-              ea <= $signed(registers[reg_src]) + $signed(mem_read);
+              //ea <= $signed(registers[reg_src]) + $signed(mem_read);
+              ea <= $signed(source) + $signed(mem_read);
             MODE_IMMEDIATE:
               if (bw)
+                source <= mem_read[7:0];
+/*
                 if (ea[0] == 0)
                   source <= mem_read[7:0];
                 else
                   source <= mem_read[15:8];
+*/
               else
                 source <= mem_read;
           endcase
@@ -454,23 +463,23 @@ always @(posedge clk) begin
       STATE_FETCH_DATA_0:
         begin
           mem_bus_enable <= 1;
-          mem_address <= ea;
+          mem_address    <= ea;
           state <= STATE_FETCH_DATA_1;
         end
       STATE_FETCH_DATA_1:
         begin
-            mem_bus_enable <= 0;
+          mem_bus_enable <= 0;
 
-            if (bw == 1) begin
-              case (ea[0])
-                0: source <= { 8'h00, mem_read[7:0]  };
-                1: source <= { 8'h00, mem_read[15:8] };
-              endcase
-            end else begin
-              source <= mem_read;
-            end
+          if (bw == 1) begin
+            case (ea[0])
+              0: source <= { 8'h00, mem_read[7:0]  };
+              1: source <= { 8'h00, mem_read[15:8] };
+            endcase
+          end else begin
+            source <= mem_read;
+          end
 
-            state <= execute_state;
+          state <= execute_state;
         end
       STATE_ALU_SINGLE:
         begin
@@ -630,7 +639,7 @@ always @(posedge clk) begin
                 end else begin
                   result[3:0] = bcd_sum_0;
                   bcd_carry[0] = 0;
-                end 
+                end
 
                 bcd_sum_1 = temp[7:4] + source[7:4] + bcd_carry[0];
 
@@ -661,7 +670,7 @@ always @(posedge clk) begin
                   end else begin
                     result[15:12] = bcd_sum_3;
                     bcd_carry[3] = 0;
-                  end 
+                  end
                 end else begin
                   result[15:8] = 0;
                 end
@@ -811,14 +820,14 @@ always @(posedge clk) begin
             mem_write_mask <= 2'b00;
           end
 
-          mem_address <= ea;
+          mem_address      <= ea;
           mem_write_enable <= 1;
-          mem_bus_enable <= 1;
+          mem_bus_enable   <= 1;
           state <= STATE_DATA_STORE_1;
         end
       STATE_DATA_STORE_1:
         begin
-          mem_bus_enable <= 0;
+          mem_bus_enable   <= 0;
           mem_write_enable <= 0;
           state <= STATE_FETCH_OP_0;
         end
