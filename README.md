@@ -10,7 +10,6 @@ changing the memory_bus.v module to take a 16 bit databus and
 changing the core processor to decode MSP430 instructions.
 
 https://www.mikekohn.net/micro/msp430_fpga.php
-https://www.mikekohn.net/micro/riscv_fpga.php
 
 Features
 ========
@@ -52,12 +51,12 @@ Instructions
 Single-Operand Arithmetic
 -------------------------
 
-    0001 00 000 was dddd rrc
-    0001 00 001 0as dddd swpb
-    0001 00 010 was dddd rra
-    0001 00 011 0as dddd sxt
-    0001 00 100 was dddd push
-    0001 00 101 0as dddd call
+    0001 00 000 wSS dddd rrc
+    0001 00 001 0SS dddd swpb
+    0001 00 010 wSS dddd rra
+    0001 00 011 0SS dddd sxt
+    0001 00 100 wSS dddd push
+    0001 00 101 0SS dddd call
     0001 00 110 000 0000 reti
 
 Conditional Jump
@@ -76,18 +75,25 @@ Conditional Jump
 Two-Operand Arithmetic
 ----------------------
 
-    0100 ssss dwss ssss mov
-    0101 ssss dwss ssss add
-    0110 ssss dwss ssss addc
-    0111 ssss dwss ssss subc
-    1000 ssss dwss ssss sub
-    1001 ssss dwss ssss cmp
-    1010 ssss dwss ssss dadd
-    1011 ssss dwss ssss bit
-    1100 ssss dwss ssss bic
-    1101 ssss dwss ssss bis
-    1110 ssss dwss ssss xor
-    1111 ssss dwss ssss and
+    0100 ssss DwSS dddd mov
+    0101 ssss DwSS dddd add
+    0110 ssss DwSS dddd addc
+    0111 ssss DwSS dddd subc
+    1000 ssss DwSS dddd sub
+    1001 ssss DwSS dddd cmp
+    1010 ssss DwSS dddd dadd
+    1011 ssss DwSS dddd bit
+    1100 ssss DwSS dddd bic
+    1101 ssss DwSS dddd bis
+    1110 ssss DwSS dddd xor
+    1111 ssss DwSS dddd and
+
+* ssss is src reg.
+* dddd is dst reg.
+* D  is Ad.
+* SS is As.
+* w  is B/W.
+* ooo is offset for jumps.
 
 Memory Map
 ==========

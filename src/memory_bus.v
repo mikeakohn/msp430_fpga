@@ -5,13 +5,10 @@
 //   Board: iceFUN iCE40 HX8K
 // License: MIT
 //
-// Copyright 2024 by Michael Kohn
+// Copyright 2024-2025 by Michael Kohn
 
 // The purpose of this module is to route reads and writes to the 4
-// different memory banks. Originally the idea was to have ROM and RAM
-// be SPI EEPROM (this may be changed in the future) so there would also
-// need a "ready" signal that would pause the CPU until the data can be
-// clocked in and out of of the SPI chips.
+// different memory banks.
 
 module memory_bus
 (
@@ -38,17 +35,17 @@ module memory_bus
 );
 
 wire [15:0] rom_data_out;
-wire [15:0] ram_data_out;
+wire [15:0] ram_data_out_0;
 wire [15:0] peripherals_data_out;
-wire [15:0] block_ram_data_out;
+wire [15:0] ram_data_out_1;
 
-wire ram_write_enable;
+wire ram_write_enable_0;
 wire peripherals_write_enable;
-wire block_ram_write_enable;
+wire ram_write_enable_1;
 
-assign ram_write_enable = (address[15:14] == 2'b00) && write_enable;
+assign ram_write_enable_0       = (address[15:14] == 2'b00) && write_enable;
 assign peripherals_write_enable = (address[15:14] == 2'b01) && write_enable;
-assign block_ram_write_enable = (address[15:14] == 2'b10) && write_enable;
+assign ram_write_enable_1       = (address[15:14] == 2'b10) && write_enable;
 
 // FIXME: The RAM probably need an enable also.
 wire peripherals_enable;
@@ -57,17 +54,16 @@ assign peripherals_enable = (address[15:14] == 2'b01) && bus_enable;
 // Based on the selected bank of memory (address[15:14]) select if
 // memory should read from ram.v, rom.v, peripherals.v.
 assign data_out = address[15] == 0 ?
-  (address[14] == 0 ? ram_data_out       : peripherals_data_out) :
-  (address[14] == 0 ? block_ram_data_out : rom_data_out);
+  (address[14] == 0 ? ram_data_out_0 : peripherals_data_out) :
+  (address[14] == 0 ? ram_data_out_1 : rom_data_out);
 
 // 0x0000 - 0x0fff: 0000 0000 0000 0000 - 0000 1111 1111 1111
 ram ram_0(
   .address      (address[11:0]),
   .data_in      (data_in),
-  .data_out     (ram_data_out),
-  //.debug        (debug),
+  .data_out     (ram_data_out_0),
   .write_mask   (write_mask),
-  .write_enable (ram_write_enable),
+  .write_enable (ram_write_enable_0),
   .clk          (raw_clk)
 );
 
@@ -98,10 +94,9 @@ peripherals peripherals_0(
 ram ram_1(
   .address      (address[11:0]),
   .data_in      (data_in),
-  .data_out     (block_ram_data_out),
-  //.debug        (debug),
+  .data_out     (ram_data_out_1),
   .write_mask   (write_mask),
-  .write_enable (block_ram_write_enable),
+  .write_enable (ram_write_enable_1),
   .clk          (raw_clk)
 );
 
@@ -111,7 +106,6 @@ rom rom_0(
   .data_out  (rom_data_out),
   .clk       (raw_clk)
 );
-
 
 endmodule
 
