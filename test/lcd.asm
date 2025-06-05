@@ -16,7 +16,7 @@ SPI_IO     equ 0x4014
 ;; Bits in SPI_CTL.
 SPI_BUSY   equ 1
 SPI_START  equ 2
-SPI_16     equ 4
+;SPI_16     equ 4
 
 ;; Bits in SPI_IO.
 LCD_RES    equ 1
@@ -76,7 +76,7 @@ run:
   jmp while_1
 
 lcd_init:
-  mov.b #0, &SPI_CTL
+  ;mov.b #0, &SPI_CTL
   mov.b #LCD_CS, &SPI_IO
   call #delay
   mov.b #LCD_CS | LCD_RES, &SPI_IO
@@ -85,25 +85,29 @@ lcd_init:
   ret
 
 lcd_clear:
-  bis.b #SPI_16, &SPI_CTL
+  ;bis.b #0, &SPI_CTL
   mov.w #(96 * 64), r4
 lcd_clear_loop:
-  mov.w #0x0f0f, r15
+  mov.b #0x0f, r15
+  call #lcd_send_data
+  mov.b #0x0f, r15
   call #lcd_send_data
   dec.w r4
   jnz lcd_clear_loop
-  bic.b #SPI_16, &SPI_CTL
+  ;bic.b #SPI_16, &SPI_CTL
   ret
 
 lcd_clear_2:
-  bis.b #SPI_16, &SPI_CTL
+  ;bis.b #SPI_16, &SPI_CTL
   mov.w #(96 * 64), r4
 lcd_clear_loop_2:
-  mov.w #0xf00f, r15
+  mov.b #0xf0, r15
+  call #lcd_send_data
+  mov.b #0x0f, r15
   call #lcd_send_data
   dec.w r4
   jnz lcd_clear_loop_2
-  bic.b #SPI_16, &SPI_CTL
+  ;bic.b #SPI_16, &SPI_CTL
   ret
 
 ;; uint32_t multiply(int16_t, int16_t);
@@ -162,7 +166,7 @@ multiply_signed_var1_positive:
   xor.w #0xffff, r12
   xor.w #0xffff, r13
   add.w #1, r12
-  add.w #0, r13
+  addc.w #0, r13
 multiply_signed_not_neg:
   ret
 
@@ -215,7 +219,7 @@ mandelbrot:
   ;; final int dy = (i1 - i0) / 64; (0x0020)
 
   ;; Set SPI to 16 bit.
-  bis.b #SPI_16, &SPI_CTL
+  ;bis.b #SPI_16, &SPI_CTL
 
   ;; for (y = 0; y < 64; y++)
   mov.w #64, &curr_y
@@ -284,6 +288,9 @@ mandelbrot_stop:
   rla.w r15
   add.w #colors, r15
   mov.w @r15, r15
+  swpb r15
+  call #lcd_send_data
+  swpb r15
   call #lcd_send_data
 
   ;; r += dx;
@@ -296,7 +303,7 @@ mandelbrot_stop:
   dec.w &curr_y
   jnz mandelbrot_for_y
 
-  bic.b #SPI_16, &SPI_CTL
+  ;bic.b #SPI_16, &SPI_CTL
   ret
 
 ;; lcd_send_cmd(r15)
@@ -314,7 +321,7 @@ lcd_send_data:
   bis.b #LCD_DC, &SPI_IO
   bic.b #LCD_CS, &SPI_IO
 
-  mov.w r15, &SPI_TX
+  mov.b r15, &SPI_TX
 
   bis.b #SPI_START, &SPI_CTL
 lcd_send_data_wait:
@@ -386,22 +393,22 @@ init_data:
 init_data_end:
 
 colors:
-  dc16 0xf800
-  dc16 0xe980
-  dc16 0xcaa0
-  dc16 0xaaa0
-  dc16 0xa980
-  dc16 0x6320
-  dc16 0x9cc0
-  dc16 0x64c0
-  dc16 0x34c0
-  dc16 0x04d5
-  dc16 0x0335
-  dc16 0x0195
-  dc16 0x0015
-  dc16 0x0013
-  dc16 0x000c
-  dc16 0x0000
+  .dc16 0xf800
+  .dc16 0xe980
+  .dc16 0xcaa0
+  .dc16 0xaaa0
+  .dc16 0xa980
+  .dc16 0x6320
+  .dc16 0x9cc0
+  .dc16 0x64c0
+  .dc16 0x34c0
+  .dc16 0x04d5
+  .dc16 0x0335
+  .dc16 0x0195
+  .dc16 0x0015
+  .dc16 0x0013
+  .dc16 0x000c
+  .dc16 0x0000
 
 .org 0xfffe
   .dw start

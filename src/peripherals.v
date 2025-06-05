@@ -5,7 +5,7 @@
 //   Board: iceFUN iCE40 HX8K
 // License: MIT
 //
-// Copyright 2024 by Michael Kohn
+// Copyright 2024-2025 by Michael Kohn
 
 module peripherals
 (
@@ -53,10 +53,10 @@ assign ioport_3 = ioport_b[2];
 //assign debug = spi_tx_buffer;
 
 wire [7:0] spi_rx_buffer;
-reg  [15:0] spi_tx_buffer;
+reg  [7:0] spi_tx_buffer;
 wire spi_busy;
 reg spi_start;
-reg spi_width_16;
+//reg spi_width_16;
 
 /*
 reg [15:0] mandelbrot_r;
@@ -103,7 +103,7 @@ always @(posedge raw_clk) begin
       5'h3:
         begin
           if (data_in[1] == 1) spi_start <= 1;
-          spi_width_16 <= data_in[2];
+          //spi_width_16 <= data_in[2];
         end
       5'h8: ioport_a <= data_in;
       5'h9:
@@ -159,7 +159,7 @@ always @(posedge raw_clk) begin
         5'h0: data_out <= buttons;
         5'h1: data_out <= spi_tx_buffer;
         5'h2: data_out <= spi_rx_buffer;
-        5'h3: data_out <= { 5'b00000, spi_width_16, 1'b0, spi_busy };
+        5'h3: data_out <= { 6'b000000, 1'b0, spi_busy };
         5'h8: data_out <= ioport_a;
         5'ha: data_out <= ioport_b;
         default: data_out <= 0;
@@ -172,7 +172,7 @@ spi spi_0
 (
   .raw_clk  (raw_clk),
   .start    (spi_start),
-  .width_16 (spi_width_16),
+  //.width_16 (spi_width_16),
   .data_tx  (spi_tx_buffer),
   .data_rx  (spi_rx_buffer),
   .busy     (spi_busy),

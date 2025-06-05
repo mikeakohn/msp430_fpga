@@ -98,7 +98,7 @@ Two-Operand Arithmetic
 Memory Map
 ==========
 
-This implementation of the RISC-V has 4 banks of memory. Each address
+This implementation of the MSP430 has 4 banks of memory. Each address
 contains a 16 bit word instead of 8 bit byte like a typical CPU.
 
 * Bank 0: 0x0000 RAM (4096 bytes)
@@ -116,10 +116,14 @@ The peripherals area contain the following:
 * 0x4000: input from push button
 * 0x4002: SPI TX buffer
 * 0x4004: SPI RX buffer
-* 0x4006: SPI control: bit 2: 8/16, bit 1: start strobe, bit 0: busy
+* 0x4006: SPI control: bit 1: start strobe, bit 0: busy
 * 0x4010: ioport_A output (in my test case only 1 pin is connected)
 * 0x4012: MIDI note value (60-96) to play a tone on the speaker or 0 to stop
 * 0x4014: ioport_B output (3 pins)
+
+Bit 2 of SPI control used to be able to set 8 or 16 bit mode, but that
+was recently removed. The file spi_16.v still has the code but is not
+connected.
 
 IO
 --
