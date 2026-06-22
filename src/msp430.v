@@ -12,12 +12,6 @@ module msp430
   output [7:0] leds,
   output [3:0] column,
   input raw_clk,
-  output eeprom_cs,
-  output eeprom_clk,
-  output eeprom_di,
-  input  eeprom_do,
-  output speaker_p,
-  output speaker_m,
   output ioport_0,
   output ioport_1,
   output ioport_2,
@@ -151,14 +145,6 @@ reg [15:0] ea;
 wire [5:0] opcode;
 assign opcode = instruction[5:0];
 
-// Eeprom.
-reg [10:0] eeprom_count;
-wire [7:0] eeprom_data_out;
-reg  [7:0] eeprom_holding [3:0];
-reg [10:0] eeprom_address;
-reg [15:0] eeprom_mem_address;
-reg eeprom_strobe = 0;
-wire eeprom_ready;
 reg reti_state;
 
 // Debug.
@@ -198,12 +184,6 @@ parameter STATE_RETI_1         = 23;
 
 parameter STATE_DATA_STORE_0   = 24;
 parameter STATE_DATA_STORE_1   = 25;
-
-parameter STATE_EEPROM_START   = 57;
-parameter STATE_EEPROM_READ    = 58;
-parameter STATE_EEPROM_WAIT    = 59;
-parameter STATE_EEPROM_WRITE   = 60;
-parameter STATE_EEPROM_DONE    = 61;
 
 parameter STATE_ERROR          = 62;
 parameter STATE_HALTED         = 63;
@@ -256,23 +236,6 @@ always @(posedge raw_clk) begin
   case (count[9:7])
     3'b000: begin column_value <= 4'b0111; leds_value <= ~registers[4][7:0]; end
     3'b010: begin column_value <= 4'b1011; leds_value <= ~registers[4][15:8]; end
-    //3'b000: begin column_value <= 4'b0111; leds_value <= ~registers[PC][7:0]; end
-    //3'b010: begin column_value <= 4'b1011; leds_value <= ~registers[PC][15:8]; end
-    //3'b000: begin column_value <= 4'b0111; leds_value <= ~source[7:0]; end
-    //3'b010: begin column_value <= 4'b1011; leds_value <= ~source[15:8]; end
-    //3'b000: begin column_value <= 4'b0111; leds_value <= ~mem_read[7:0]; end
-    //3'b010: begin column_value <= 4'b1011; leds_value <= ~mem_read[15:8]; end
-    //3'b000: begin column_value <= 4'b0111; leds_value <= ~result[7:0]; end
-    //3'b010: begin column_value <= 4'b1011; leds_value <= ~result[15:8]; end
-    //3'b000: begin column_value <= 4'b0111; leds_value <= ~ea[7:0]; end
-    //3'b010: begin column_value <= 4'b1011; leds_value <= ~ea[15:8]; end
-    //3'b000: begin column_value <= 4'b0111; leds_value <= ~pc[7:0]; end
-    //3'b010: begin column_value <= 4'b1011; leds_value <= ~pc[15:8]; end
-    //3'b000: begin column_value <= 4'b0111; leds_value <= ~instruction[7:0]; end
-    //3'b010: begin column_value <= 4'b1011; leds_value <= ~instruction[15:8]; end
-    //3'b010: begin column_value <= 4'b1011; leds_value <= ~alu_op_1; end
-    //3'b010: begin column_value <= 4'b1011; leds_value <= ~instruction[9:7]; end
-    //3'b100: begin column_value <= 4'b1101; leds_value <= ~sr[7:0]; end
     3'b100: begin column_value <= 4'b1101; leds_value <= ~pc[7:0]; end
     3'b110: begin column_value <= 4'b1110; leds_value <= ~state; end
     default: begin column_value <= 4'b1111; leds_value <= 8'hff; end
@@ -293,7 +256,6 @@ always @(posedge clk) begin
           mem_write_enable <= 0;
           mem_write        <= 0;
           delay_loop <= 12000;
-          //eeprom_strobe <= 0;
           state <= STATE_DELAY_LOOP;
           reti_state <= 0;
         end
@@ -301,14 +263,7 @@ always @(posedge clk) begin
         begin
           // This is probably not needed. The chip starts up fine without it.
           if (delay_loop == 0) begin
-
-            // If button is not pushed, start rom.v code otherwise use EEPROM.
-            if (button_program_select) begin
-              //registers[PC] <= 16'h4000;
-              state <= STATE_FETCH_RESET_0;
-            end else begin
-              state <= STATE_EEPROM_START;
-            end
+            state <= STATE_FETCH_RESET_0;
           end else begin
             delay_loop <= delay_loop - 1;
           end
@@ -831,73 +786,6 @@ always @(posedge clk) begin
           mem_write_enable <= 0;
           state <= STATE_FETCH_OP_0;
         end
-      STATE_EEPROM_START:
-        begin
-          // Initialize values for reading from SPI-like EEPROM.
-          if (eeprom_ready) begin
-            //eeprom_mem_address <= pc;
-            eeprom_mem_address <= 16'hc000;
-            eeprom_count <= 0;
-            state <= STATE_EEPROM_READ;
-          end
-        end
-      STATE_EEPROM_READ:
-        begin
-          // Set the next EEPROM address to read from and strobe.
-          mem_bus_enable <= 0;
-          eeprom_address <= eeprom_count;
-          eeprom_strobe <= 1;
-          state <= STATE_EEPROM_WAIT;
-        end
-      STATE_EEPROM_WAIT:
-        begin
-          // Wait until 8 bits are clocked in.
-          eeprom_strobe <= 0;
-
-          if (eeprom_ready) begin
-
-            if (eeprom_count[1:0] == 3) begin
-              mem_address <= eeprom_mem_address;
-              mem_write_mask <= 4'b0000;
-              // After reading 4 bytes, store the 32 bit value to RAM.
-              mem_write <= {
-                eeprom_data_out,
-                eeprom_holding[2],
-                eeprom_holding[1],
-                eeprom_holding[0]
-              };
-
-              state <= STATE_EEPROM_WRITE;
-            end else begin
-              // Read 3 bytes into a holding register.
-              eeprom_holding[eeprom_count[1:0]] <= eeprom_data_out;
-              state <= STATE_EEPROM_READ;
-            end
-
-            eeprom_count <= eeprom_count + 1;
-          end
-        end
-      STATE_EEPROM_WRITE:
-        begin
-          // Write value read from EEPROM into memory.
-          mem_bus_enable <= 1;
-          mem_write_enable <= 1;
-          eeprom_mem_address <= eeprom_mem_address + 4;
-
-          state <= STATE_EEPROM_DONE;
-        end
-      STATE_EEPROM_DONE:
-        begin
-          // Finish writing and read next byte if needed.
-          mem_bus_enable <= 0;
-          mem_write_enable <= 0;
-
-          if (eeprom_count == 0) begin
-            // Read in 2048 bytes.
-            state <= STATE_FETCH_OP_0;
-          end else
-            state <= STATE_EEPROM_READ;
-        end
       STATE_ERROR:
         begin
           state <= STATE_ERROR;
@@ -920,8 +808,6 @@ memory_bus memory_bus_0(
   .write_enable (mem_write_enable),
   .clk          (clk),
   .raw_clk      (raw_clk),
-  .speaker_p    (speaker_p),
-  .speaker_m    (speaker_m),
   .ioport_0     (ioport_0),
   .ioport_1     (ioport_1),
   .ioport_2     (ioport_2),
@@ -931,19 +817,6 @@ memory_bus memory_bus_0(
   .spi_clk      (spi_clk),
   .spi_mosi     (spi_mosi),
   .spi_miso     (spi_miso)
-);
-
-eeprom eeprom_0
-(
-  .address    (eeprom_address),
-  .strobe     (eeprom_strobe),
-  .raw_clk    (raw_clk),
-  .eeprom_cs  (eeprom_cs),
-  .eeprom_clk (eeprom_clk),
-  .eeprom_di  (eeprom_di),
-  .eeprom_do  (eeprom_do),
-  .ready      (eeprom_ready),
-  .data_out   (eeprom_data_out)
 );
 
 endmodule

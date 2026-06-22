@@ -3,7 +3,6 @@ NAKEN_INCLUDE=../naken_asm/include
 PROGRAM=msp430
 SOURCE= \
   src/$(PROGRAM).v \
-  src/eeprom.v \
   src/memory_bus.v \
   src/peripherals.v \
   src/ram.v \
