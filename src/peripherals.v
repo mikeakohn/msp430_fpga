@@ -5,7 +5,7 @@
 //   Board: iceFUN iCE40 HX8K
 // License: MIT
 //
-// Copyright 2024-2025 by Michael Kohn
+// Copyright 2024-2026 by Michael Kohn
 
 module peripherals
 (
@@ -59,8 +59,6 @@ end
 // Wiring to RAM in between keeps data_in with the correct result.
 always @(posedge raw_clk) begin
 //always @(posedge enable) begin
-  //if (reset) speaker_value_high <= 0;
-
   if (write_enable) begin
     case (address[7:1])
       5'h1: spi_tx_buffer <= data_in;
