@@ -255,6 +255,7 @@ always @(posedge clk) begin
           mem_address      <= 0;
           mem_write_enable <= 0;
           mem_write        <= 0;
+          ea               <= 16'hfffe;
           delay_loop <= 12000;
           state <= STATE_DELAY_LOOP;
           reti_state <= 0;
@@ -272,7 +273,7 @@ always @(posedge clk) begin
         begin
           mem_bus_enable   <= 1;
           mem_write_enable <= 0;
-          mem_address      <= 16'hfffe;
+          mem_address      <= ea;
           state <= STATE_FETCH_RESET_1;
         end
       STATE_FETCH_RESET_1:
@@ -713,9 +714,6 @@ always @(posedge clk) begin
               registers[rd] <= result;
               state <= STATE_FETCH_OP_0;
             end else begin
-              //mem_address <= pc;
-              //mem_bus_enable <= 1;
-              //state <= STATE_WB_TWO_1;
               state <= STATE_DATA_STORE_0;
             end
         end
@@ -730,7 +728,7 @@ always @(posedge clk) begin
         end
       STATE_PUSH_1:
         begin
-          registers[SP] <= mem_address;
+          registers[SP] <= sp - 2;
           mem_bus_enable <= 0;
           mem_write_enable <= 0;
           state <= STATE_FETCH_OP_0;
@@ -739,13 +737,14 @@ always @(posedge clk) begin
         begin
           mem_bus_enable <= 1;
           mem_address <= registers[SP];
-          registers[SP] <= registers[SP] + 2;
           state <= STATE_RETI_1;
         end
       STATE_RETI_1:
         begin
           mem_bus_enable <= 0;
           reti_state <= ~reti_state;
+
+          registers[SP] <= registers[SP] + 2;
 
           if (reti_state == 0) begin
             registers[SR] <= mem_read[15:0];
